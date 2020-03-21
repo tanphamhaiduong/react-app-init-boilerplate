@@ -1,0 +1,40 @@
+name: Master
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  master:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checks out repository to $GITHUB_WORKSPACE
+        uses: actions/checkout@v1
+
+      - name: Setup Node Environement
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12
+
+      - name: Cache node modules
+        id: cache
+        uses: actions/cache@v1
+        with:
+          path: node_modules
+          key: build-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            build-${{ hashFiles('**/yarn.lock') }}
+
+      - name: Install dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: yarn install
+
+      - name: Lint
+        run: yarn lint
+
+      - name: Test
+        run: yarn test:coverage
+
+      - name: Build
+        run: yarn build

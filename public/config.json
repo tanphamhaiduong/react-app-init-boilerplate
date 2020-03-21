@@ -1,0 +1,9 @@
+{
+  "uri": "",
+  "appEnv": "",
+  "sentryDns": "",
+  "google": {
+    "authClientId": "",
+    "analyticsClientId": ""
+  }
+}

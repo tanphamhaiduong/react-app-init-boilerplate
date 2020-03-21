@@ -1,48 +1,68 @@
 import React from 'react'
+import I18n from 'i18n-js'
 import ReactDOM from 'react-dom'
 import Raven from 'raven-js'
 import ReactGA from 'react-ga'
-import { IntlProvider } from 'react-intl'
 import { getLocaleFromBrowserLanguage } from './utils'
 import App from 'src/App'
 import * as serviceWorker from './serviceWorker'
+import './index.scss'
+import { storage } from 'src/utils/storage'
 
-const LOCALES = ['en', 'my']
+const LOCALES = ['en', 'vn']
 
 const locale = getLocaleFromBrowserLanguage({
   defaultLocale: 'en',
   availableLocales: LOCALES,
   navigator: window.navigator,
 })
+const localeText = require(`../public/locales/${locale}.json`)
 
-const renderApp = (Component: React.ComponentType, locale: string) => {
-  ReactDOM.render(
-    <IntlProvider locale={locale}>
-      <Component />
-    </IntlProvider>,
-    document.getElementById('root') as HTMLElement,
-  )
+// Init global config
+window.spideveloper = {
+  storage: storage,
+  config: {
+    AppEnv: 'development',
+    sentryDns: '',
+    uri: '',
+    google: {
+      analyticsKey: '',
+      authClientId: '',
+    },
+  },
+}
+
+const renderApp = (Component: React.ComponentType) => {
+  ReactDOM.render(<Component />, document.getElementById('root') as HTMLElement)
 }
 
 const run = async () => {
-  const { NODE_ENV, REACT_APP_SENTRY_KEY, REACT_APP_GOOGLE_ANALYTICS, APP_VERSION } = process.env
-  if (NODE_ENV !== 'development' && REACT_APP_SENTRY_KEY) {
-    Raven.config(REACT_APP_SENTRY_KEY, {
-      release: APP_VERSION,
-    }).install()
-  }
-
-  if (NODE_ENV !== 'development' && REACT_APP_GOOGLE_ANALYTICS) {
-    ReactGA.initialize(REACT_APP_GOOGLE_ANALYTICS)
-    ReactGA.pageview(window.location.pathname + window.location.search)
-  }
-  await renderApp(App, locale)
+  await fetch('config.json')
+    .then(response => response.json())
+    .then(config => {
+      window.spideveloper.config = config
+      I18n.translations[locale] = localeText
+      I18n.locale = locale
+      if (config.AppEnv !== 'development' && config.sentryDns) {
+        Raven.config(config.sentryDns, {
+          release: process.env.APP_VERSION,
+        }).install()
+      }
+      if (config.AppEnv !== 'development' && config?.google.analyticsClientId) {
+        ReactGA.initialize(config?.google.analyticsClientId)
+        ReactGA.pageview(window.location.pathname + window.location.search)
+      }
+      renderApp(App)
+    })
+    .catch(error => {
+      console.error('Cannot fetch config', error)
+    })
 }
 
 if (module.hot) {
   module.hot.accept('src/App', () => {
     const NextApp = require('src/App').default
-    renderApp(NextApp, locale)
+    renderApp(NextApp)
   })
 }
 

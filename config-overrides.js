@@ -3,10 +3,8 @@ const path = require('path')
 const rewireReactHotLoader = require('react-app-rewire-hot-loader')
 const {
   addWebpackResolve,
-  addBabelPlugins,
   override,
   useEslintRc,
-  addPostcssPlugins,
   addBundleVisualizer,
   watchAll,
   overrideDevServer,
@@ -58,20 +56,6 @@ const getAppVersion = () => {
   }
 }
 
-const purgecss = require('@fullhuman/postcss-purgecss')({
-  // Specify the paths to all of the template files in your project
-  content: [
-    {
-      raw: '<html><body><div id="root"></div></body></html>',
-      extension: 'html',
-    },
-    './src/**/*.html',
-    './src/**/*.js',
-  ],
-  // Include any special characters you're using in this regular expression
-  defaultExtractor: content => content.match(/[A-Za-z0-9-_:/]+/g) || [],
-})
-
 module.exports = {
   webpack: override(
     addWebpackResolve({
@@ -83,20 +67,8 @@ module.exports = {
         src: path.resolve(__dirname, 'src'),
       },
     }),
-    addBabelPlugins('styled-components', [
-      'tailwind-components',
-      {
-        config: './src/tailwind.config.js',
-        format: 'auto',
-      },
-      'react-hot-loader/babel',
-    ]),
     useEslintRc(),
     enableEslintTypescript(),
-    addPostcssPlugins([
-      require('tailwindcss')('./src/tailwind.config.js'),
-      ...(process.env.NODE_ENV === 'production' ? [purgecss] : []),
-    ]),
     process.env.REACT_APP_BUNDLE_VISUALIZER == 1 && addBundleVisualizer(),
     rewireReactHotLoader,
     overrideProcessEnv(),
@@ -111,10 +83,10 @@ module.exports = {
       snapshotSerializers: ['enzyme-to-json/serializer'],
       coverageThreshold: {
         global: {
-          branches: 80,
-          functions: 80,
-          lines: 80,
-          statements: 80,
+          branches: 40,
+          functions: 40,
+          lines: 40,
+          statements: 40,
         },
       },
       coveragePathIgnorePatterns: [
@@ -123,7 +95,6 @@ module.exports = {
         '<rootDir>/src/__mocks__',
         '<rootDir>/src/index.tsx',
         'index.ts',
-        'tailwind.config.js',
       ],
     }
     return newConfig
